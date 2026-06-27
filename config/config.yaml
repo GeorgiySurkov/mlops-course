@@ -1,6 +1,15 @@
 # Static project configuration. Server hosts are overridden via env/.env in
-# config/__init__.py, so nothing host-specific is hardcoded here.
+# config/__init__.py, so nothing host-specific is hardcoded here. Dataset IDs are
+# resolved at runtime by name, never stored here.
 
 clearml:
   project_name: "MLOps Course Sentiment"
   queue_name: "students"
+  dataset_project: "MLOps Course Sentiment"
+  dataset_name: "imdb-sentiment"
+
+data:
+  hf_dataset: "stanfordnlp/imdb"
+  train_per_class: 2500
+  test_per_class: 500
+  random_seed: 42

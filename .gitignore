@@ -11,6 +11,9 @@ __pycache__/
 .venv/
 *.egg-info/
 
+# Stage 1: locally prepared dataset CSVs (versioned in ClearML, not in git)
+data/
+
 # Tooling
 .DS_Store
 .ipynb_checkpoints/

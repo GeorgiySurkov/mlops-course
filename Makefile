@@ -5,7 +5,7 @@ SHELL := /bin/bash
 SERVER_COMPOSE := infra/clearml-server/docker-compose.yml
 
 .DEFAULT_GOAL := help
-.PHONY: help install server-up server-down server-logs credentials agent smoke clean
+.PHONY: help install server-up server-down server-logs credentials agent smoke dataset clean
 
 help: ## show this help
 	@echo "MLOps ClearML Stage 0"
@@ -32,6 +32,11 @@ agent: ## run the agent on the students queue (foreground)
 
 smoke: ## enqueue a smoke task to verify agent execution
 	uv run python scripts/smoke_task.py
+
+# --- Stage 1: dataset ---
+dataset: ## Stage 1: build IMDB subset + register a versioned ClearML Dataset
+	uv run python prepare_data.py
+	uv run python create_dataset.py
 
 clean: ## remove the uv environment
 	rm -rf .venv

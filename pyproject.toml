@@ -4,10 +4,16 @@ version = "0.1.0"
 description = "MLOps AITH 2026 coursework — Stage 0 infrastructure (self-hosted ClearML)"
 requires-python = ">=3.10"
 dependencies = [
-    # Stage 0 only: ClearML SDK + config loading. Deps for later stages are not pulled in yet.
+    # Stages 0-1: ClearML SDK, config loading and Stage 1 dataset prep. Deps for later stages are not pulled in yet.
     "clearml==2.1.5",
     "PyYAML==6.0.1",
     "python-dotenv==1.0.1",
+    # Stage 1 data prep: download a balanced IMDB subset (prepare_data.py). The agent
+    # re-installs from the task's auto-detected imports. huggingface-hub is pinned
+    # because newer hubs reject legacy dataset ids. This pair is known-good.
+    "pandas==2.2.2",
+    "datasets==2.19.0",
+    "huggingface-hub==0.23.0",
 ]
 
 # Virtual project: config/ and scripts/ are run via `uv run`, not installed as a package.
