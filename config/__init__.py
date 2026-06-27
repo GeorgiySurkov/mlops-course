@@ -55,10 +55,17 @@ class TrainingConfig:
 
 
 @dataclass
+class RegistryConfig:
+    min_f1: float
+    tag: str
+
+
+@dataclass
 class AppConfig:
     clearml: ClearMLConfig
     data: DataConfig
     training: TrainingConfig
+    registry: RegistryConfig
     labels: Dict[int, str]
 
 
@@ -77,11 +84,13 @@ def load_config(path: Path = CONFIG_PATH) -> AppConfig:
     )
     data_cfg = DataConfig(**raw["data"])
     training_cfg = TrainingConfig(**raw["training"])
+    registry_cfg = RegistryConfig(**raw["registry"])
     labels = {int(k): str(v) for k, v in raw["labels"].items()}
     return AppConfig(
         clearml=clearml_cfg,
         data=data_cfg,
         training=training_cfg,
+        registry=registry_cfg,
         labels=labels,
     )
 

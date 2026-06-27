@@ -5,7 +5,7 @@ SHELL := /bin/bash
 SERVER_COMPOSE := infra/clearml-server/docker-compose.yml
 
 .DEFAULT_GOAL := help
-.PHONY: help install server-up server-down server-logs credentials agent smoke dataset test experiments clean
+.PHONY: help install server-up server-down server-logs credentials agent smoke dataset test experiments register clean
 
 help: ## show this help
 	@echo "MLOps ClearML Stage 0"
@@ -44,6 +44,10 @@ test: ## offline unit tests for model.py (no server needed)
 
 experiments: ## Stage 2: enqueue 2 training experiments to the agent (students queue)
 	bash scripts/run_experiments.sh
+
+# --- Stage 3: model registry ---
+register: ## Stage 3: publish the best model to the registry (prints the model id)
+	uv run python register_model.py
 
 clean: ## remove the uv environment
 	rm -rf .venv
