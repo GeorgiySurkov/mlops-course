@@ -29,6 +29,11 @@ registry:
   min_f1: 0.80
   tag: "production"
 
+serving:
+  endpoint: "sentiment"
+  version: 1
+  port: 8085
+
 labels:
   0: "negative"
   1: "positive"

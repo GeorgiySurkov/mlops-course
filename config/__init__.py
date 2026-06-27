@@ -61,11 +61,19 @@ class RegistryConfig:
 
 
 @dataclass
+class ServingConfig:
+    endpoint: str
+    version: int
+    port: int
+
+
+@dataclass
 class AppConfig:
     clearml: ClearMLConfig
     data: DataConfig
     training: TrainingConfig
     registry: RegistryConfig
+    serving: ServingConfig
     labels: Dict[int, str]
 
 
@@ -85,12 +93,15 @@ def load_config(path: Path = CONFIG_PATH) -> AppConfig:
     data_cfg = DataConfig(**raw["data"])
     training_cfg = TrainingConfig(**raw["training"])
     registry_cfg = RegistryConfig(**raw["registry"])
+    s = raw["serving"]
+    serving_cfg = ServingConfig(endpoint=s["endpoint"], version=int(s["version"]), port=int(s["port"]))
     labels = {int(k): str(v) for k, v in raw["labels"].items()}
     return AppConfig(
         clearml=clearml_cfg,
         data=data_cfg,
         training=training_cfg,
         registry=registry_cfg,
+        serving=serving_cfg,
         labels=labels,
     )
 

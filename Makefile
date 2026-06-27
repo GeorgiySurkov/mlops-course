@@ -3,9 +3,11 @@
 SHELL := /bin/bash
 
 SERVER_COMPOSE := infra/clearml-server/docker-compose.yml
+SERVING_COMPOSE := infra/clearml-serving/docker-compose.yml
+SERVING_ENV := infra/clearml-serving/serving.env
 
 .DEFAULT_GOAL := help
-.PHONY: help install server-up server-down server-logs credentials agent smoke dataset test experiments register clean
+.PHONY: help install server-up server-down server-logs credentials agent smoke dataset test experiments register serve serve-down clean
 
 help: ## show this help
 	@echo "MLOps ClearML Stage 0"
@@ -48,6 +50,13 @@ experiments: ## Stage 2: enqueue 2 training experiments to the agent (students q
 # --- Stage 3: model registry ---
 register: ## Stage 3: publish the best model to the registry (prints the model id)
 	uv run python register_model.py
+
+# --- Stage 4: inference (ClearML Serving) ---
+serve: ## Stage 4: deploy the published model with ClearML Serving (pass MODEL_ID=... to pin)
+	uv run bash scripts/deploy_serving.sh
+
+serve-down: ## stop the serving stack
+	docker compose --env-file $(SERVING_ENV) -f $(SERVING_COMPOSE) down
 
 clean: ## remove the uv environment
 	rm -rf .venv

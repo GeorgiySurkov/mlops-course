@@ -4,6 +4,7 @@ clearml.conf
 # Local env files with real hosts/keys (commit only the .example templates)
 .env
 infra/clearml-server/.env
+infra/clearml-serving/serving.env
 
 # Python / uv (uv.lock IS committed)
 __pycache__/

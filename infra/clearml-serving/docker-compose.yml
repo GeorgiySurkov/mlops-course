@@ -1,0 +1,65 @@
+# ClearML Serving, vendored from clearml/clearml-serving's docker-compose and adapted to
+# run locally alongside the self-hosted ClearML server stack.
+#   - inference is published on host port 8085 (8080 is taken by the ClearML web UI)
+#   - only zookeeper + kafka + inference are kept. The statistics service and the
+#     prometheus/grafana/alertmanager layer are dropped: they are optional monitoring,
+#     and the statistics image has no pinned 1.3.0 tag (re-add them from upstream with
+#     the latest tag if you want metrics/dashboards)
+#   - hosts/keys/serving-task-id come from serving.env (see serving.env.example)
+#
+# Endpoint after deploy: http://localhost:8085/serve/<endpoint>/<version>
+services:
+  zookeeper:
+    image: bitnamilegacy/zookeeper:3.7.0
+    container_name: clearml-serving-zookeeper
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    networks:
+      - clearml-serving-backend
+
+  kafka:
+    image: bitnamilegacy/kafka:3.1.1
+    container_name: clearml-serving-kafka
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://clearml-serving-kafka:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://clearml-serving-kafka:9092
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=clearml-serving-zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CREATE_TOPICS="topic_test:1:1"
+    depends_on:
+      - zookeeper
+    networks:
+      - clearml-serving-backend
+
+  clearml-serving-inference:
+    # only :latest is published (it is clearml-serving 1.3.0). The CLI is pinned to 1.3.0
+    # in pyproject.toml so the config format the CLI writes matches this image.
+    image: clearml/clearml-serving-inference:latest
+    container_name: clearml-serving-inference
+    restart: unless-stopped
+    security_opt:
+      - seccomp:unconfined
+    ports:
+      - "${CLEARML_SERVING_HOST_PORT:-8085}:8080"
+    environment:
+      CLEARML_WEB_HOST: ${CLEARML_WEB_HOST:-http://host.docker.internal:8080}
+      CLEARML_API_HOST: ${CLEARML_API_HOST:-http://host.docker.internal:8008}
+      CLEARML_FILES_HOST: ${CLEARML_FILES_HOST:-http://host.docker.internal:8081}
+      CLEARML_API_ACCESS_KEY: ${CLEARML_API_ACCESS_KEY}
+      CLEARML_API_SECRET_KEY: ${CLEARML_API_SECRET_KEY}
+      CLEARML_SERVING_TASK_ID: ${CLEARML_SERVING_TASK_ID:-}
+      CLEARML_SERVING_PORT: 8080
+      CLEARML_SERVING_POLL_FREQ: ${CLEARML_SERVING_POLL_FREQ:-1.0}
+      CLEARML_DEFAULT_SERVE_SUFFIX: serve
+      CLEARML_DEFAULT_KAFKA_SERVE_URL: clearml-serving-kafka:9092
+      # same versions as train time so the pickled sklearn pipeline loads cleanly
+      CLEARML_EXTRA_PYTHON_PACKAGES: ${CLEARML_EXTRA_PYTHON_PACKAGES:-scikit-learn==1.4.2 numpy==1.26.4 scipy==1.13.1 joblib==1.4.2 pandas==2.2.2}
+    depends_on:
+      - kafka
+    networks:
+      - clearml-serving-backend
+
+networks:
+  clearml-serving-backend:
+    driver: bridge
