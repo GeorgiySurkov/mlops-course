@@ -7,9 +7,24 @@ clearml:
   queue_name: "students"
   dataset_project: "MLOps Course Sentiment"
   dataset_name: "imdb-sentiment"
+  model_name: "sentiment-tfidf-logreg"
 
 data:
   hf_dataset: "stanfordnlp/imdb"
   train_per_class: 2500
   test_per_class: 500
   random_seed: 42
+
+training:
+  task_name: "train-sentiment"
+  # baseline defaults, can be overridden via argparse or the ClearML UI
+  max_features: 10000
+  ngram_min: 1
+  ngram_max: 1
+  C: 1.0
+  max_iter: 300
+  solver: "liblinear"
+
+labels:
+  0: "negative"
+  1: "positive"

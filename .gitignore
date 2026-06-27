@@ -14,6 +14,9 @@ __pycache__/
 # Stage 1: locally prepared dataset CSVs (versioned in ClearML, not in git)
 data/
 
+# Stage 2: trained model pickles (uploaded to ClearML as artifacts, not in git)
+*.pkl
+
 # Tooling
 .DS_Store
 .ipynb_checkpoints/

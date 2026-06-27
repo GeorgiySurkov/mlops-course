@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "MLOps AITH 2026 coursework — Stage 0 infrastructure (self-hosted ClearML)"
 requires-python = ">=3.10"
 dependencies = [
-    # Stages 0-1: ClearML SDK, config loading and Stage 1 dataset prep. Deps for later stages are not pulled in yet.
+    # Stages 0-2: ClearML SDK, config loading, dataset prep and training. Deps for later stages are not pulled in yet.
     "clearml==2.1.5",
     "PyYAML==6.0.1",
     "python-dotenv==1.0.1",
@@ -14,8 +14,20 @@ dependencies = [
     "pandas==2.2.2",
     "datasets==2.19.0",
     "huggingface-hub==0.23.0",
+    # Stage 2 training. numpy<2 and scikit-learn 1.4 are pinned for stable pickle
+    # compatibility with the (later) clearml-serving inference container. Train and
+    # serve must agree on these versions.
+    "scikit-learn==1.4.2",
+    "numpy==1.26.4",
+    "scipy==1.13.1",
+    "joblib==1.4.2",
+    "matplotlib==3.8.4",
 ]
 
 # Virtual project: config/ and scripts/ are run via `uv run`, not installed as a package.
 [tool.uv]
 package = false
+
+# Stage 2: offline unit tests for model.py.
+[dependency-groups]
+dev = ["pytest==8.2.0"]

@@ -9,6 +9,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Dict
 
 import yaml
 
@@ -28,6 +29,7 @@ class ClearMLConfig:
     queue_name: str
     dataset_project: str
     dataset_name: str
+    model_name: str
     api_host: str
     web_host: str
     files_host: str
@@ -42,9 +44,22 @@ class DataConfig:
 
 
 @dataclass
+class TrainingConfig:
+    task_name: str
+    max_features: int
+    ngram_min: int
+    ngram_max: int
+    C: float
+    max_iter: int
+    solver: str
+
+
+@dataclass
 class AppConfig:
     clearml: ClearMLConfig
     data: DataConfig
+    training: TrainingConfig
+    labels: Dict[int, str]
 
 
 def load_config(path: Path = CONFIG_PATH) -> AppConfig:
@@ -55,12 +70,20 @@ def load_config(path: Path = CONFIG_PATH) -> AppConfig:
         queue_name=c["queue_name"],
         dataset_project=c["dataset_project"],
         dataset_name=c["dataset_name"],
+        model_name=c["model_name"],
         api_host=os.getenv("CLEARML_API_HOST", "http://localhost:8008"),
         web_host=os.getenv("CLEARML_WEB_HOST", "http://localhost:8080"),
         files_host=os.getenv("CLEARML_FILES_HOST", "http://localhost:8081"),
     )
     data_cfg = DataConfig(**raw["data"])
-    return AppConfig(clearml=clearml_cfg, data=data_cfg)
+    training_cfg = TrainingConfig(**raw["training"])
+    labels = {int(k): str(v) for k, v in raw["labels"].items()}
+    return AppConfig(
+        clearml=clearml_cfg,
+        data=data_cfg,
+        training=training_cfg,
+        labels=labels,
+    )
 
 
 cfg = load_config()
