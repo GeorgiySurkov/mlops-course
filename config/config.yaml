@@ -1,0 +1,6 @@
+# Static project configuration. Server hosts are overridden via env/.env in
+# config/__init__.py, so nothing host-specific is hardcoded here.
+
+clearml:
+  project_name: "MLOps Course Sentiment"
+  queue_name: "students"

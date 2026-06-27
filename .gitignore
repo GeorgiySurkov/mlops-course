@@ -1,0 +1,16 @@
+# ClearML credentials — never commit secrets
+clearml.conf
+
+# Local env files with real hosts/keys (commit only the .example templates)
+.env
+infra/clearml-server/.env
+
+# Python / uv (uv.lock IS committed)
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+
+# Tooling
+.DS_Store
+.ipynb_checkpoints/

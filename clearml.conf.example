@@ -1,0 +1,18 @@
+# Template for ~/clearml.conf. `clearml-init` generates the real file with your
+# credentials — do NOT commit it (it is in .gitignore). This template documents the
+# expected shape for the self-hosted local server.
+api {
+    web_server: http://localhost:8080
+    api_server: http://localhost:8008
+    files_server: http://localhost:8081
+    credentials {
+        access_key: "REPLACE_WITH_YOUR_ACCESS_KEY"
+        secret_key: "REPLACE_WITH_YOUR_SECRET_KEY"
+    }
+}
+sdk {
+    development {
+        # keep agent runs reproducible: store models/artifacts on the file server
+        default_output_uri: "http://localhost:8081"
+    }
+}

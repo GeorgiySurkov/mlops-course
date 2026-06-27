@@ -1,0 +1,142 @@
+# ClearML Server, vendored from clearml/clearml-server's docker-compose and adapted
+# for local self-hosted use on Docker Desktop (macOS) without root privileges:
+#   - data lives in named Docker volumes instead of host bind mounts to /opt/clearml
+#     (no sudo, no Docker file-sharing setup, fully portable)
+#   - Elasticsearch heap pinned to 2 GB (ES_JAVA_OPTS) so the whole stack fits in an
+#     8 GB Docker Desktop VM
+#   - the auxiliary `agent-services` and `async_delete` services are dropped: we run
+#     our own agent on the `students` queue in venv mode (infra/agent/run-agent.sh),
+#     and the services-queue agent only crash-loops without extra credentials
+# Ports: apiserver 8008, fileserver 8081, web UI 8080.
+
+services:
+  apiserver:
+    command:
+      - apiserver
+    container_name: clearml-apiserver
+    image: clearml/server:latest
+    restart: unless-stopped
+    volumes:
+      - clearml-logs:/var/log/clearml
+      - clearml-config:/opt/clearml/config
+      - clearml-fileserver:/mnt/fileserver
+      # fixed-users config for headless credential creation (see apiserver.conf)
+      - ./apiserver.conf:/opt/clearml/config/apiserver.conf
+    depends_on:
+      - redis
+      - mongo
+      - elasticsearch
+      - fileserver
+    environment:
+      CLEARML_ELASTIC_SERVICE_HOST: elasticsearch
+      CLEARML_ELASTIC_SERVICE_PORT: 9200
+      CLEARML_MONGODB_SERVICE_HOST: mongo
+      CLEARML_MONGODB_SERVICE_PORT: 27017
+      CLEARML_REDIS_SERVICE_HOST: redis
+      CLEARML_REDIS_SERVICE_PORT: 6379
+      CLEARML_SERVER_DEPLOYMENT_TYPE: linux
+      CLEARML__apiserver__pre_populate__enabled: "true"
+      CLEARML__apiserver__pre_populate__zip_files: "/opt/clearml/db-pre-populate"
+      CLEARML__apiserver__pre_populate__artifacts_path: "/mnt/fileserver"
+    ports:
+      - "8008:8008"
+    networks:
+      - backend
+      - frontend
+
+  elasticsearch:
+    networks:
+      - backend
+    container_name: clearml-elastic
+    environment:
+      bootstrap.memory_lock: "true"
+      cluster.name: clearml
+      cluster.routing.allocation.node_initial_primaries_recoveries: "500"
+      cluster.routing.allocation.disk.watermark.low: 500mb
+      cluster.routing.allocation.disk.watermark.high: 500mb
+      cluster.routing.allocation.disk.watermark.flood_stage: 500mb
+      discovery.type: "single-node"
+      http.compression_level: "7"
+      node.name: clearml
+      reindex.remote.whitelist: "'*.*'"
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms2g -Xmx2g -Dlog4j2.formatMsgNoLookups=true"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    image: elasticsearch:8.19.9
+    restart: unless-stopped
+    volumes:
+      - clearml-elastic:/usr/share/elasticsearch/data
+      - /usr/share/elasticsearch/logs
+
+  fileserver:
+    networks:
+      - backend
+      - frontend
+    command:
+      - fileserver
+    container_name: clearml-fileserver
+    image: clearml/server:latest
+    environment:
+      CLEARML__fileserver__delete__allow_batch: "true"
+    restart: unless-stopped
+    volumes:
+      - clearml-logs:/var/log/clearml
+      - clearml-fileserver:/mnt/fileserver
+      - clearml-config:/opt/clearml/config
+    ports:
+      - "8081:8081"
+
+  mongo:
+    networks:
+      - backend
+    container_name: clearml-mongo
+    image: mongo:8.0.15
+    restart: unless-stopped
+    command: --setParameter internalQueryMaxBlockingSortMemoryUsageBytes=196100200
+    volumes:
+      - clearml-mongo-db:/data/db
+      - clearml-mongo-configdb:/data/configdb
+
+  redis:
+    networks:
+      - backend
+    container_name: clearml-redis
+    image: redis:8.2.3
+    restart: unless-stopped
+    volumes:
+      - clearml-redis:/data
+
+  webserver:
+    command:
+      - webserver
+    container_name: clearml-webserver
+    image: clearml/server:latest
+    restart: unless-stopped
+    depends_on:
+      - apiserver
+    ports:
+      - "8080:80"
+    networks:
+      - backend
+      - frontend
+
+networks:
+  backend:
+    driver: bridge
+  frontend:
+    driver: bridge
+
+volumes:
+  clearml-elastic:
+  clearml-mongo-db:
+  clearml-mongo-configdb:
+  clearml-redis:
+  clearml-fileserver:
+  clearml-config:
+  clearml-logs:
