@@ -1,47 +1,52 @@
-# MLOps AITH 2026 — курсовой проект
+# MLOps AITH 2026 coursework
 
-Сервис классификации текстов (sentiment) на ClearML. Главное — жизненный цикл модели
-и инфраструктура, а не метрики качества. Полные требования по этапам:
-[`docs/hw-task/Курсовой проект – MLOps AITH 2026.md`](docs/hw-task/Курсовой%20проект%20%E2%80%93%20MLOps%20AITH%202026.md).
+A small text sentiment classifier taken through a full ML lifecycle on a self-hosted
+ClearML. This is a course lab, so the infrastructure and the lifecycle are the point,
+not model accuracy.
 
-## Этап 0 — подготовка инфраструктуры
+The goal: version the data, train on a remote agent, log everything, register the best
+model, serve it over HTTP, and put a small UI in front.
 
-Развернуть self-hosted ClearML Server, настроить SDK, поднять ClearML Agent на очереди
-`students` и убедиться, что задача выполняется именно агентом.
+## What was done
 
-### Предпосылки
+Everything runs on a self-hosted ClearML server with an agent picking up jobs from the
+`students` queue.
 
-- Docker (Docker Desktop на macOS) с ~8 ГБ памяти для VM
-- [uv](https://docs.astral.sh/uv/) — управление Python-окружением
+The data is a balanced IMDB subset, versioned as a ClearML Dataset. Training runs as a
+ClearML Task on the agent: a TF-IDF + LogReg pipeline, with hyperparameters, metrics and a
+confusion matrix logged and the model saved as an artifact. A couple of experiments run
+with different hyperparameters, and the best result is published to the ClearML Model
+Registry behind a quality gate (an f1 floor, plus it has to beat the current production
+model). From the registry the model is deployed to an inference endpoint through the
+official ClearML Serving. A Streamlit UI sits in front and talks to that endpoint over
+HTTP only, without loading the model itself.
 
-### Запуск
+For reproducibility, train and serve pin the same numpy/scikit-learn versions so the
+pickled pipeline loads cleanly in the inference container.
+
+## Quick start
 
 ```bash
-make install        # uv sync -> .venv с ClearML SDK
-make server-up      # поднять стек ClearML (UI на http://localhost:8080, ~1-2 мин)
-# войти в UI как admin / admin1234 (fixed-admin из infra/clearml-server/apiserver.conf),
-# Settings -> Workspace -> Create new credentials, скопировать блок
-make credentials    # uv run clearml-init: вставить ключи -> ~/clearml.conf
-make agent          # в отдельном терминале: агент на очереди students (foreground)
-make smoke          # отправить smoke-задачу и проверить выполнение агентом
+make install        # uv sync -> .venv with the ClearML SDK
+make server-up      # ClearML stack, web UI on http://localhost:8080 (first boot ~1-2 min)
+# in the web UI (admin / admin1234) create new credentials and copy the block
+make credentials    # uv run clearml-init: paste the keys -> ~/clearml.conf
+make agent          # separate terminal: agent on the students queue (foreground)
+make smoke          # enqueue a smoke task and check the agent runs it
 ```
 
-`make help` — список целей.
+Then run the rest in order: `make dataset`, `make experiments`, `make register`,
+`make serve`, `make ui`. Run `make help` for the full list of targets.
 
-### Проверка (критерии этапа 0)
+## Layout
 
-- В UI (Workers & Queues) виден агент-воркер.
-- Задача `stage0-smoke` (проект «MLOps Course Sentiment») уходит в очередь `students`.
-- Задача выполняется агентом (не локально): статус queued → running, в логе строка
-  «Hello from the ClearML agent…».
-
-### Структура
-
-| Путь | Назначение |
+| Path | Purpose |
 | --- | --- |
-| `pyproject.toml`, `uv.lock` | зависимости Stage 0 (uv) |
-| `infra/clearml-server/` | docker-compose стек ClearML + fixed-admin (`apiserver.conf`) |
-| `infra/agent/run-agent.sh` | запуск ClearML Agent через `uvx` |
-| `scripts/smoke_task.py` | smoke-задача для проверки удалённого исполнения |
-| `config/` | загрузка конфигурации (yaml + env) |
-| `.env.example`, `clearml.conf.example` | шаблоны (реальные файлы не коммитятся) |
+| `config/` | config loading (yaml + env) |
+| `prepare_data.py`, `create_dataset.py` | build the IMDB subset and register it as a Dataset |
+| `model.py`, `train.py`, `tests/` | pure ML logic, the training Task, offline tests |
+| `register_model.py` | publish the best model to the registry |
+| `serving/`, `scripts/deploy_serving.sh` | serving preprocessing and the deploy script |
+| `ui/app.py` | Streamlit front end |
+| `infra/` | docker-compose stacks for the ClearML server and serving |
+| `.env.example`, `clearml.conf.example` | templates, real files are not committed |
