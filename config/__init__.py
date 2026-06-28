@@ -68,12 +68,19 @@ class ServingConfig:
 
 
 @dataclass
+class UIConfig:
+    default_serving_url: str
+    request_timeout: int
+
+
+@dataclass
 class AppConfig:
     clearml: ClearMLConfig
     data: DataConfig
     training: TrainingConfig
     registry: RegistryConfig
     serving: ServingConfig
+    ui: UIConfig
     labels: Dict[int, str]
 
 
@@ -95,6 +102,11 @@ def load_config(path: Path = CONFIG_PATH) -> AppConfig:
     registry_cfg = RegistryConfig(**raw["registry"])
     s = raw["serving"]
     serving_cfg = ServingConfig(endpoint=s["endpoint"], version=int(s["version"]), port=int(s["port"]))
+    ui = raw["ui"]
+    ui_cfg = UIConfig(
+        default_serving_url=os.getenv("SERVING_URL", ui["default_serving_url"]),
+        request_timeout=int(os.getenv("SERVING_TIMEOUT", ui["request_timeout"])),
+    )
     labels = {int(k): str(v) for k, v in raw["labels"].items()}
     return AppConfig(
         clearml=clearml_cfg,
@@ -102,6 +114,7 @@ def load_config(path: Path = CONFIG_PATH) -> AppConfig:
         training=training_cfg,
         registry=registry_cfg,
         serving=serving_cfg,
+        ui=ui_cfg,
         labels=labels,
     )
 

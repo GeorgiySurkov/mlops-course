@@ -7,7 +7,7 @@ SERVING_COMPOSE := infra/clearml-serving/docker-compose.yml
 SERVING_ENV := infra/clearml-serving/serving.env
 
 .DEFAULT_GOAL := help
-.PHONY: help install server-up server-down server-logs credentials agent smoke dataset test experiments register serve serve-down clean
+.PHONY: help install server-up server-down server-logs credentials agent smoke dataset test experiments register serve serve-down ui clean
 
 help: ## show this help
 	@echo "MLOps ClearML Stage 0"
@@ -57,6 +57,10 @@ serve: ## Stage 4: deploy the published model with ClearML Serving (pass MODEL_I
 
 serve-down: ## stop the serving stack
 	docker compose --env-file $(SERVING_ENV) -f $(SERVING_COMPOSE) down
+
+# --- Stage 5: UI ---
+ui: ## Stage 5: launch the Streamlit UI (talks to the serving endpoint over HTTP)
+	uv run streamlit run ui/app.py
 
 clean: ## remove the uv environment
 	rm -rf .venv

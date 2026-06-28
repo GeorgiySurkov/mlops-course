@@ -34,6 +34,11 @@ serving:
   version: 1
   port: 8085
 
+ui:
+  # clearml-serving routes versioned endpoints at /serve/<endpoint>/<version>
+  default_serving_url: "http://localhost:8085/serve/sentiment/1"
+  request_timeout: 10
+
 labels:
   0: "negative"
   1: "positive"
